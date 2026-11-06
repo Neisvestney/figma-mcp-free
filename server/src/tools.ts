@@ -2,6 +2,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
+import { randomUUID } from "node:crypto";
+import { ScriptLogs } from "./script-logs.js";
 import type { Node } from "./node.js";
 import { toolInputSchemas } from "./schema.js";
 import type { BridgeResponse } from "./types.js";
@@ -54,6 +56,25 @@ interface SaveScreenshotItemResult {
 }
 
 export function registerTools(server: McpServer, node: Node): void {
+  server.tool(
+    "request_script_execution",
+    "Request one coherent Figma editing task using an async JavaScript function body with figma Plugin API access. First inspect the target nodes with the existing read tools. Describe intended changes and affected elements in the user's language. The plugin shows the exact code and requires explicit user approval before execution in Figma Design; editing is unavailable in Dev Mode. Load necessary fonts with figma.loadFontAsync before changing text. Do not close the plugin, manage Undo, or leave background changes after the script completes. The injected console (log/info/warn/error/debug) is captured per run; the full bounded JSONL log is available at logsPath. Await the result and do not claim changes were applied until confirmed success. After rejection, do not resubmit unless the user asks. Errors can leave partial changes; there is no automatic rollback. After timeout or connection loss, inspect the document before retrying to avoid duplicate changes. Timers cannot forcibly stop synchronous infinite loops.",
+    toolInputSchemas.request_script_execution.shape,
+    async ({ description, code }): Promise<ToolResult> => {
+      const requestId = randomUUID();
+      try {
+        const response = await node.sendWithParams("request_script_execution", undefined, { description, code, _scriptRequestId: requestId });
+        const data = response.data as import("./script-types.js").ScriptReply;
+        return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+          isError: !data || !["success", "rejected"].includes(data.status) };
+      } catch (error) {
+        const data = await new ScriptLogs().save({ requestId,
+          status: "unknown", error: { message: `Transport failed; inspect the document before retrying. ${error instanceof Error ? error.message : String(error)}` },
+        }, description, []);
+        return { isError: true, content: [{ type: "text", text: JSON.stringify(data) }] };
+      }
+    }
+  );
   server.tool(
     "get_document",
     "Get the current Figma page document tree with full serialized properties. Returns all nodes on the current page. For large pages, use get_metadata first to understand the structure, then get_design_context on specific nodes.",

@@ -80,3 +80,11 @@ body {
 .toggle-label {
   flex-grow: 1;
 }
+
+.script-card { padding: 12px; border: 1px solid #4b5563; border-radius: 8px; }
+.script-card p { overflow-wrap: anywhere; }
+.script-card pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 240px; overflow: auto; font-size: 12px; }
+.script-card details { margin: 12px 0; }
+.script-actions { display: flex; gap: 8px; }
+button { background: #2563eb; color: white; border: 0; border-radius: 6px; padding: 8px 12px; cursor: pointer; }
+button:disabled { opacity: .5; cursor: not-allowed; }

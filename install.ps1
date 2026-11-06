@@ -1,6 +1,6 @@
 # Figma MCP Free — Windows installer
 # Supports: Claude Desktop, Claude Code, Cursor, VS Code, Windsurf,
-#           Gemini CLI (Antigravity), Zed
+#           Gemini CLI (Antigravity), Zed, Codex
 #
 # Run from an elevated or normal PowerShell prompt:
 #   .\install.ps1
@@ -126,6 +126,20 @@ if (Command-Exists "claude") {
     $Skipped += "Claude Code (claude CLI not found)"
 }
 
+if (Command-Exists "codex") {
+    Info "Configuring Codex (CLI / IDE)..."
+    codex mcp add figma-mcp-free -- node $DistJs
+    if ($LASTEXITCODE -ne 0) { throw "Failed to configure Codex MCP server" }
+    $codexConfigDir = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $env:USERPROFILE ".codex" }
+    $codexConfigPath = Join-Path $codexConfigDir "config.toml"
+    node (Join-Path $ScriptDir "scripts\set-codex-timeout.mjs") $codexConfigPath
+    if ($LASTEXITCODE -ne 0) { throw "Failed to configure Codex tool timeout" }
+    Success "Codex configured → $codexConfigPath (tool timeout: 600 seconds)"
+    $Installed += "Codex"
+} else {
+    $Skipped += "Codex (codex CLI not found)"
+}
+
 # Cursor
 $cursorDetected = (Test-Path $env:LOCALAPPDATA + "\Programs\cursor") -or (Test-Path $CursorGlobalCfg)
 Try-Configure "Cursor" $CursorGlobalCfg $cursorDetected
@@ -192,5 +206,6 @@ if ($Skipped.Count -gt 0) {
 }
 
 Write-Host ""
+Write-Host "  Script approval: allow enough review time in your client's MCP tool-call timeout (recommended: 600 seconds)."
 Write-Host "  ✓ Done! Restart your AI tool to pick up the new MCP server." -ForegroundColor Green
 Write-Host "  Docs: https://github.com/slashdoodleart/figma-mcp-free" -ForegroundColor Cyan

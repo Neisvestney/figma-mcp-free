@@ -1,4 +1,5 @@
 import { serializeNode } from "./serializer";
+import { ScriptRunner } from "./script-runner";
 
 type RequestType =
   | "get_document"
@@ -454,7 +455,8 @@ const handleRequest = async (
   }
 };
 
-figma.showUI(__html__, { width: 320, height: 180 });
+figma.showUI(__html__, { width: 440, height: 600 });
+const scripts = new ScriptRunner();
 sendStatus();
 
 figma.on("selectionchange", () => {
@@ -462,12 +464,25 @@ figma.on("selectionchange", () => {
 });
 
 figma.ui.onmessage = async (message) => {
+  if (message.type === "script-transport") {
+    scripts.transport(message.sessionId);
+    return;
+  }
+  if (message.type === "script-decision") {
+    await scripts.decide(message);
+    return;
+  }
   if (message.type === "ui-ready") {
     sendStatus();
+    await scripts.status();
     return;
   }
 
   if (message.type === "server-request") {
+    if (message.payload.type === "request_script_execution") {
+      await scripts.request(message.payload, message.sessionId);
+      return;
+    }
     const response = await handleRequest(message.payload as ServerRequest);
     try {
       figma.ui.postMessage(response);

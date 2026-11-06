@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Figma MCP Free — installer
 # Supports: Claude Desktop, Claude Code, Cursor, VS Code, Windsurf,
-#           Gemini CLI (Antigravity), Zed
+#           Gemini CLI (Antigravity), Zed, Codex
 set -euo pipefail
 
 # ── colours ────────────────────────────────────────────────────────────────
@@ -177,6 +177,17 @@ else
   SKIPPED+=("Claude Code (claude CLI not found)")
 fi
 
+if command_exists codex; then
+  info "Configuring Codex (CLI / IDE)..."
+  codex mcp add figma-mcp-free -- node "$DIST_JS"
+  codex_config_dir="${CODEX_HOME:-$HOME/.codex}"
+  node "$SCRIPT_DIR/scripts/set-codex-timeout.mjs" "$codex_config_dir/config.toml"
+  success "Codex configured → $codex_config_dir/config.toml (tool timeout: 600 seconds)"
+  INSTALLED+=("Codex")
+else
+  SKIPPED+=("Codex (codex CLI not found)")
+fi
+
 # Cursor
 if command_exists cursor || [[ -d "$HOME/.cursor" ]]; then
   inject_mcp_config "$CURSOR_GLOBAL_CFG" "$SERVER_JSON"
@@ -271,5 +282,6 @@ if [[ ${#SKIPPED[@]} -gt 0 ]]; then
 fi
 
 echo ""
+echo "  Script approval: allow enough review time in your client's MCP tool-call timeout (recommended: 600 seconds)."
 success "Done! Restart your AI tool to pick up the new MCP server."
 echo -e "  Docs: ${CYAN}https://github.com/slashdoodleart/figma-mcp-free${RESET}"

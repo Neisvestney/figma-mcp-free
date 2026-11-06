@@ -39,6 +39,8 @@ build/Release
 
 # Dependency directories
 node_modules/
+.npm-cache/
+.test-dist/
 jspm_packages/
 
 # Snowpack dependency directory (https://snowpack.dev/)
@@ -179,3 +181,4 @@ server/dist/
 # Editor/IDE
 .idea/
 .vscode/
+/.codex/config.toml

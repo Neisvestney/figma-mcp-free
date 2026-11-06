@@ -7,6 +7,10 @@ export const figmaNodeId = z
 const exportFormat = z.enum(["PNG", "SVG", "JPG", "PDF"]);
 
 export const toolInputSchemas = {
+  request_script_execution: z.object({
+    description: z.string().trim().min(1).max(4000).describe("Describe the intended changes and affected elements in the user's language."),
+    code: z.string().min(1).max(100_000).refine(value => value.trim().length > 0).describe("Async JavaScript function body with figma and a per-run console; await and JSON-serializable return values are supported."),
+  }),
   get_node: z.object({
     nodeId: figmaNodeId.describe("The node ID to fetch"),
   }),
@@ -103,6 +107,7 @@ const rpcToArgs: Record<
   ToolName,
   (nodeIds?: string[], params?: Record<string, unknown>) => unknown
 > = {
+  request_script_execution: (_nodeIds, params) => ({ ...params }),
   get_node: (nodeIds) => ({ nodeId: nodeIds?.[0] }),
   get_metadata: (_nodeIds, params) => ({ ...params }),
   get_design_context: (nodeIds, params) => ({ nodeIds, ...params }),

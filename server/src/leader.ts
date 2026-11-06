@@ -82,6 +82,8 @@ export class Leader {
         }
 
         if (parsedUrl.pathname === "/rpc" && req.method === "POST") {
+          req.setTimeout(0);
+          res.setTimeout(0);
           this.handleRPC(req, res);
           return;
         }

@@ -11,6 +11,7 @@
     "dist"
   ],
   "scripts": {
+    "test": "npm run build && node --test tests/*.test.mjs",
     "build": "tsc",
     "prepublishOnly": "bun run build"
   },
